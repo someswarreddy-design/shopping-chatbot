@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ShopBot AI</title>
+
+<style>
+body{
+ margin:0;
+ height:100vh;
+ display:flex;
+ justify-content:center;
+ align-items:center;
+ background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+ font-family:'Segoe UI',sans-serif;
+}
+.chatbox{
+ width:460px;
+ background:#fff;
+ border-radius:18px;
+ box-shadow:0 20px 50px rgba(0,0,0,.35);
+ overflow:hidden;
+}
+.header{
+ background:#111;
+ color:#fff;
+ padding:15px;
+ display:flex;
+ align-items:center;
+}
+.logo{
+ width:42px;height:42px;
+ border-radius:50%;
+ background:#2c7be5;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ font-size:22px;
+ margin-right:10px;
+}
+.messages{
+ height:360px;
+ padding:15px;
+ overflow-y:auto;
+ background:#f6f8fb;
+}
+.user,.bot{
+ margin:8px 0;
+ padding:10px 14px;
+ border-radius:14px;
+ max-width:82%;
+ font-size:14px;
+}
+.user{
+ background:#2c7be5;
+ color:white;
+ margin-left:auto;
+}
+.bot{
+ background:#e9ecef;
+ color:#333;
+}
+.product{
+ background:#fff;
+ border:1px solid #ddd;
+ border-radius:12px;
+ padding:8px;
+ margin-top:6px;
+}
+.product b{color:#2c7be5;}
+.actions{
+ margin-top:5px;
+ font-size:12px;
+ color:#007bff;
+ cursor:pointer;
+}
+.input-area{
+ display:flex;
+ border-top:1px solid #ddd;
+}
+input{
+ flex:1;
+ padding:14px;
+ border:none;
+ outline:none;
+}
+button{
+ padding:14px 20px;
+ background:#2c7be5;
+ color:white;
+ border:none;
+ cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="chatbox">
+ <div class="header">
+  <div class="logo">🛍️</div>
+  <b>ShopBot AI</b>
+ </div>
+
+ <div class="messages" id="chat"></div>
+
+ <div class="input-area">
+  <input id="input" placeholder="Search products / cart / order..." />
+  <button onclick="send()">➤</button>
+ </div>
+</div>
+
+<script>
+// 🔹 PRODUCT DATABASE (10 PRODUCTS)
+const products = [
+ {name:"Smartphone", price:12000, cat:"phone mobile android"},
+ {name:"Gaming Laptop", price:65000, cat:"laptop gaming computer"},
+ {name:"Wireless Headphones", price:2500, cat:"audio bluetooth wireless"},
+ {name:"Smart Watch", price:3000, cat:"watch wearable fitness"},
+ {name:"Bluetooth Speaker", price:1800, cat:"audio music wireless"},
+ {name:"Tablet", price:22000, cat:"tablet android device"},
+ {name:"DSLR Camera", price:42000, cat:"camera photography"},
+ {name:"Power Bank", price:1200, cat:"battery charging mobile"},
+ {name:"Wireless Mouse", price:800, cat:"mouse computer accessory"},
+ {name:"Keyboard", price:1500, cat:"keyboard computer accessory"}
+];
+
+let cart = [];
+
+// 🤖 MAIN CHAT FUNCTION
+function send(){
+ let text = input.value.toLowerCase().trim();
+ if(!text) return;
+
+ add("You", text, "user");
+
+ // 👋 Greeting
+ if(["hi","hello","hey"].includes(text)){
+   add("Bot",
+    "👋 Welcome to <b>ShopBot AI</b><br>" +
+    "🔍 Search products like:<br>" +
+    "phone, laptop, camera, audio",
+    "bot");
+   input.value="";
+   return;
+ }
+
+ // ❓ Help
+ if(text.includes("help")){
+   add("Bot",
+    "💡 Commands:<br>" +
+    "• search product name<br>" +
+    "• cart → view cart<br>" +
+    "• order → place order",
+    "bot");
+   input.value="";
+   return;
+ }
+
+ // 🛒 View Cart
+ if(text.includes("cart")){
+   if(cart.length === 0){
+     add("Bot","🛒 Your cart is empty","bot");
+   } else {
+     let total = 0;
+     let reply = "🛒 <b>Your Cart</b><br>";
+     cart.forEach((item,i)=>{
+       reply += `${i+1}. ${item.name} - ₹${item.price}<br>`;
+       total += item.price;
+     });
+     reply += `<b>Total Cost: ₹${total}</b>`;
+     add("Bot", reply, "bot");
+   }
+   input.value="";
+   return;
+ }
+
+ // 🧾 Place Order
+ if(text.includes("order")){
+   if(cart.length === 0){
+     add("Bot","❌ Cart is empty. Add items first.","bot");
+   } else {
+     let total = cart.reduce((sum,p)=>sum+p.price,0);
+     cart = [];
+     add("Bot",
+       "🎉 <b>Order Placed Successfully!</b><br>" +
+       "💰 Total Amount Paid: ₹"+total+"<br>" +
+       "📦 Delivery in 3–5 days",
+       "bot");
+   }
+   input.value="";
+   return;
+ }
+
+ // 🔍 Product Search
+ let result = products.filter(p =>
+   p.name.toLowerCase().includes(text) ||
+   p.cat.includes(text)
+ );
+
+ if(result.length){
+   let reply = "🔍 <b>Search Results</b><br>";
+   result.forEach(p=>{
+     reply += `
+      <div class="product">
+        <b>${p.name}</b><br>
+        Price: ₹${p.price}<br>
+        <span class="actions" onclick="addCart('${p.name}')">➕ Add to cart</span>
+      </div>`;
+   });
+   add("Bot", reply, "bot");
+ } else {
+   add("Bot","❌ No products found. Try another keyword.","bot");
+ }
+
+ input.value="";
+}
+
+// ➕ ADD TO CART
+function addCart(name){
+ let item = products.find(p=>p.name===name);
+ cart.push(item);
+ add("Bot",`✅ <b>${name}</b> added to cart`, "bot");
+}
+
+// 💬 DISPLAY MESSAGE
+function add(sender, text, cls){
+ chat.innerHTML += `<div class="${cls}"><b>${sender}:</b> ${text}</div>`;
+ chat.scrollTop = chat.scrollHeight;
+}
+
+// 🤖 AUTO WELCOME
+add("Bot",
+ "👋 Welcome to <b>ShopBot AI</b><br>" +
+ "Type <b>hi</b> or search any product to start shopping!",
+ "bot");
+</script>
+
+</body>
+</html>
